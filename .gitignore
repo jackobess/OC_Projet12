@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.ipynb_checkpoints/
+*.egg-info/
+
+# Secrets / config locale
+.env
+*.env
+
+# MLflow (local, lourd, régénérable)
+mlruns/
+mlflow.db
+
+# Données : on ne garde que le dataset consolidé
+data/*
+!data/consolidated_yield.csv
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Tools (hors scope du projet)
+tools/

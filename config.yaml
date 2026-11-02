@@ -1,0 +1,21 @@
+# config.yaml
+seed: 42
+paths:
+  raw: data/raw/yield_df.csv
+  additional: data/raw/pesticides_par_ha.csv
+  clean: data/consolidated_yield.csv
+dedup_keys: [area, item, year]
+expected_rows: 13130      # garde-fou : le script plante si ça change
+
+# Dictionnaire de traduction des cultures
+item_fr:
+  'Cassava': 'Manioc'
+  'Maize': 'Maïs'
+  'Plantains and others': 'Bananes plantains et autres'
+  'Potatoes': 'Pommes de terre'
+  'Rice, paddy': 'Riz'
+  'Sorghum': 'Sorgho'
+  'Soybeans': 'Soja'
+  'Sweet potatoes': 'Patates douces'
+  'Wheat': 'Blé'
+  'Yams': 'Igname'
