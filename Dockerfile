@@ -1,10 +1,10 @@
-FROM python:3.11-slim
-# -> mettre la même version de Python que celle de l'entraînement (le joblib en dépend)
+FROM python:3.13.9-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 WORKDIR /app
 
 COPY src/api/requirements.txt .
+RUN apt-get update && apt-get install -y --no-install-recommends libgomp1 && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src/api ./src/api

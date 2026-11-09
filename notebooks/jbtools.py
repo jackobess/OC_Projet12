@@ -22,6 +22,7 @@ def _minifig(row):      #  _▄█
 def _skewscore(row):
     lamed=row['50%'] ; lemin=row['min'] ; lemax=row['max']
     if lemin<0: lamed=lamed-lemin ; lemax=lemax-lemin; lemin=0
+    leskewscore = 0  # Valeur par défaut
     if lamed==0:
         if lemin==0 and lemax==0: leskewscore=0
         elif lemin==0 and lemax>0: leskewscore='+'

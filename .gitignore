@@ -28,3 +28,6 @@ Thumbs.db
 
 # Tools (hors scope du projet)
 tools/
+
+# les _sav
+*_sav.*

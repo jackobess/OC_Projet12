@@ -5,17 +5,62 @@ paths:
   additional: data/raw/pesticides_par_ha.csv
   clean: data/consolidated_yield.csv
 dedup_keys: [area, item, year]
-expected_rows: 13130      # garde-fou : le script plante si ça change
 
 # Dictionnaire de traduction des cultures
 item_fr:
-  'Cassava': 'Manioc'
-  'Maize': 'Maïs'
+  'Cassava'             : 'Manioc'
+  'Maize'               : 'Maïs'
   'Plantains and others': 'Bananes plantains et autres'
-  'Potatoes': 'Pommes de terre'
-  'Rice, paddy': 'Riz'
-  'Sorghum': 'Sorgho'
-  'Soybeans': 'Soja'
-  'Sweet potatoes': 'Patates douces'
-  'Wheat': 'Blé'
-  'Yams': 'Igname'
+  'Potatoes'            : 'Pommes de terre'
+  'Rice, paddy'         : 'Riz'
+  'Sorghum'             : 'Sorgho'
+  'Soybeans'            : 'Soja'
+  'Sweet potatoes'      : 'Patates douces'
+  'Wheat'               : 'Blé'
+  'Yams'                : 'Igname'
+
+# Les colonnes du CSV consolidé sont renommées pour être plus lisibles et plus faciles à manipuler dans le code.
+raw_columns:
+  "Area"                          : "area"
+  "Item"                          : "item"
+  "Year"                          : "year"
+  "hg/ha_yield"                   : "yield_hg_ha"
+  "average_rain_fall_mm_per_year" : "rain_mm"
+  "pesticides_tonnes"             : "pesticides_t"
+  "avg_temp"                      : "temp_c"
+
+modeling:
+  n_iter: 20
+  cv_folds: 5
+  search_spaces:
+    random_forest:
+      n_estimators: [100, 200, 300, 500]
+      max_depth: [4, 6, 8, 12, 16, null]
+      min_samples_leaf: [1, 3, 5, 10, 20]
+      max_features: [0.5, 0.75, 1.0]
+    gradient_boosting:
+      n_estimators: [100, 200, 300, 500]
+      learning_rate: {dist: loguniform, low: 0.02, high: 0.3}
+      max_depth: [2, 3, 4, 5, 6]
+      subsample: [0.6, 0.8, 1.0]
+      min_samples_leaf: [1, 5, 10, 20]
+    xgboost:
+      n_estimators: [100, 200, 300, 500]
+      learning_rate: {dist: loguniform, low: 0.02, high: 0.3}
+      max_depth: [2, 3, 4, 5, 6]
+      subsample: [0.6, 0.8, 1.0]
+      colsample_bytree: [0.6, 0.8, 1.0]
+      min_child_weight: [1, 5, 10, 20]
+      reg_lambda: {dist: loguniform, low: 0.1, high: 30}
+    lightgbm:
+      n_estimators: [100, 200, 300, 500]
+      learning_rate: {dist: loguniform, low: 0.02, high: 0.3}
+      num_leaves: [7, 15, 31, 63]
+      min_child_samples: [10, 20, 50, 100]
+      subsample: [0.6, 0.8, 1.0]
+      colsample_bytree: [0.6, 0.8, 1.0]
+      reg_lambda: {dist: loguniform, low: 0.1, high: 30}
+
+quality_gate:
+  max_ratio_vs_baseline: 1.0   # test_rmse <= ratio x baseline item_mean
+  min_reco_vs_random: 1.0      # reco_top1 >= ratio x hasard

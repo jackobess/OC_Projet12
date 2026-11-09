@@ -1,4 +1,9 @@
-"""API de prédiction / recommandation de rendement agricole (Agritech Answers)."""
+# API de prédiction / recommandation de rendement agricole (Agritech Answers).
+#
+# Usage: uvicorn src.api.main:app --reload
+# docs interactives : http://localhost:8000/docs
+
+import math
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -6,12 +11,13 @@ from typing import Literal
 
 import joblib
 import pandas as pd
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import FastAPI, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 # /app/src/api/main.py -> ROOT = /app (idem en local : racine du projet)
 ROOT = Path(__file__).resolve().parents[2]
 MODEL_PATH = Path(os.getenv("MODEL_PATH", ROOT / "models" / "yield_model.joblib"))
+VARS = ("rain_mm", "temp_c", "pest_kg_ha")
 
 
 @asynccontextmanager
@@ -23,7 +29,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="Agritech Answers - Yield API",
     description="Prédiction du rendement d'une culture et recommandation de la meilleure culture.",
-    version="1.0.0",
+    version="1.1.0",
     lifespan=lifespan,
 )
 
@@ -36,7 +42,8 @@ class Context(BaseModel):
 
 
 class PredictRequest(Context):
-    item: str = Field(..., description="Culture (nom anglais, cf. GET /meta)", examples=["Maize"])
+    item: str = Field(..., description="Culture (nom anglais, cf. GET /getitemlist, insensible à la casse)",
+                      examples=["Maize"])
 
 
 class RecommendRequest(Context):
@@ -62,13 +69,55 @@ class RecommendItem(BaseModel):
     gap_vs_norm_pct: float
 
 
+class ExcludedItem(BaseModel):
+    item: str
+    reasons: list[str]
+
+
 class RecommendResponse(BaseModel):
     sort_by: str
     ranking: list[RecommendItem]
+    excluded: list[ExcludedItem] = []
     warnings: list[str] = []
 
 
+class MinMax(BaseModel):
+    min: int
+    max: int
+
+
+class RangeResponse(BaseModel):
+    item: str
+    rain_mm: MinMax
+    temp_c: MinMax
+    pest_kg_ha: MinMax
+
+
+class ItemListResponse(BaseModel):
+    items: list[str]
+
+
 # ---------- Logique ----------
+def _resolve_item(bundle: dict, name: str) -> str | None:
+    """Nom canonique de la culture (insensible à la casse), ou None si inconnue."""
+    return next((i for i in bundle["items"] if i.lower() == name.strip().lower()), None)
+
+
+def _bounds(bundle: dict, item: str) -> dict[str, tuple[int, int]]:
+    """Bornes (min arrondi à l'entier inférieur, max à l'entier supérieur) d'une culture, ou 'all' = globales."""
+    ranges = bundle["item_ranges"]
+    sel = list(ranges.values()) if item == "all" else [ranges[item]]
+    return {v: (math.floor(min(r[v]["min"] for r in sel)), math.ceil(max(r[v]["max"] for r in sel)))
+            for v in VARS}
+
+
+def _out_of_range(bundle: dict, item: str, ctx: Context, cols=VARS) -> list[str]:
+    """Raisons pour lesquelles la saisie sort des bornes observées pour cette culture."""
+    b = _bounds(bundle, item)
+    return [f"{c}={getattr(ctx, c):g} hors plage observée [{b[c][0]}, {b[c][1]}]"
+            for c in cols if not b[c][0] <= getattr(ctx, c) <= b[c][1]]
+
+
 def _predict(bundle: dict, items: list[str], ctx: Context) -> pd.DataFrame:
     X = pd.DataFrame({"item": items, "rain_mm": ctx.rain_mm, "temp_c": ctx.temp_c,
                       "pest_kg_ha": ctx.pest_kg_ha})[bundle["features"]]
@@ -78,46 +127,56 @@ def _predict(bundle: dict, items: list[str], ctx: Context) -> pd.DataFrame:
     return out.round(3)
 
 
-def _range_warnings(bundle: dict, ctx: Context) -> list[str]:
-    """Prévient si une saisie sort de la plage vue à l'entraînement (prédiction peu fiable)."""
-    msgs = []
-    for col, (lo, hi) in bundle["input_ranges"].items():
-        v = getattr(ctx, col)
-        if not lo <= v <= hi:
-            msgs.append(f"{col}={v} hors plage d'entraînement [{lo:.1f}, {hi:.1f}] : résultat peu fiable")
-    return msgs
-
-
 # ---------- Endpoints ----------
 @app.get("/health")
 def health():
     return {"status": "ok"}
 
 
-@app.get("/meta")
-def meta(request: Request):
-    """Cultures acceptées et plages d'entrée (utile pour alimenter les sliders du front)."""
+@app.get("/getitemlist", response_model=ItemListResponse)
+def get_item_list(request: Request):
+    """Toutes les cultures prises en compte."""
+    return ItemListResponse(items=list(request.app.state.bundle["items"]))
+
+
+@app.get("/getrange", response_model=RangeResponse)
+def get_range(request: Request, item: str = Query(..., description="Culture, ou 'all' pour les bornes globales",
+                                                  examples=["maize"])):
+    """Min (entier inférieur) et max (entier supérieur) de pluie, température et pesticides observés."""
     b = request.app.state.bundle
-    return {"items": b["items"], "input_ranges": b["input_ranges"], "model": b["model_name"],
-            "norm_t_ha": b["item_mean_t_ha"]}
+    name = "all" if item.strip().lower() == "all" else _resolve_item(b, item)
+    if name is None:
+        raise HTTPException(404, f"Culture inconnue '{item}'. Valeurs possibles : {list(b['items'])} ou 'all'")
+    return RangeResponse(item=name, **{v: MinMax(min=lo, max=hi) for v, (lo, hi) in _bounds(b, name).items()})
 
 
 @app.post("/predict", response_model=PredictResponse)
 def predict(req: PredictRequest, request: Request):
     b = request.app.state.bundle
-    if req.item not in b["items"]:
-        raise HTTPException(422, f"Culture inconnue '{req.item}'. Valeurs possibles : {b['items']}")
-    row = _predict(b, [req.item], req).iloc[0]
-    return PredictResponse(item=req.item, predicted_yield_t_ha=row.predicted_yield_t_ha,
+    item = _resolve_item(b, req.item)
+    if item is None:
+        raise HTTPException(422, f"Culture inconnue '{req.item}'. Valeurs possibles : {list(b['items'])}")
+    row = _predict(b, [item], req).iloc[0]
+    return PredictResponse(item=item, predicted_yield_t_ha=row.predicted_yield_t_ha,
                            norm_t_ha=row.norm_t_ha, gap_vs_norm_pct=row.gap_vs_norm_pct,
-                           warnings=_range_warnings(b, req))
+                           warnings=_out_of_range(b, item, req))
 
 
 @app.post("/recommend", response_model=RecommendResponse)
 def recommend(req: RecommendRequest, request: Request):
     b = request.app.state.bundle
-    df = _predict(b, list(b["items"]), req)
-    key = "gap_vs_norm_pct" if req.sort_by == "ecart_vs_norme" else "predicted_yield_t_ha"
-    df = df.sort_values(key, ascending=False).reset_index(drop=True)
-    ranking = [RecommendItem(rank=i + 1, **r) for i, r in enumerate(df.to_dict("records"))]
-    return RecommendResponse(sort_by=req.sort_by, ranking=ranking, warnings=_range_warnings(b, req))
+    # on écarte les cultures dont la plage observée (pluie / température) ne couvre pas la saisie
+    kept, excluded = [], []
+    for it in b["items"]:
+        why = _out_of_range(b, it, req, cols=("rain_mm", "temp_c"))
+        (excluded.append(ExcludedItem(item=it, reasons=why)) if why else kept.append(it))
+
+    ranking = []
+    if kept:
+        df = _predict(b, kept, req)
+        key = "gap_vs_norm_pct" if req.sort_by == "ecart_vs_norme" else "predicted_yield_t_ha"
+        df = df.sort_values(key, ascending=False).reset_index(drop=True)
+        ranking = [RecommendItem(rank=i + 1, **r) for i, r in enumerate(df.to_dict("records"))]
+    # pesticides : pas de filtre, simple avertissement si hors plage globale
+    return RecommendResponse(sort_by=req.sort_by, ranking=ranking, excluded=excluded,
+                             warnings=_out_of_range(b, "all", req, cols=("pest_kg_ha",)))

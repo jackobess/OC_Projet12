@@ -1,11 +1,8 @@
-fastapi==0.115.*
-uvicorn[standard]==0.32.*
-pydantic>=2.7,<3
-pandas
-numpy
-joblib
-# IMPORTANT : mêmes versions que l'environnement d'entraînement (cf. commande dans la réponse)
-scikit-learn==X.Y.Z
-# décommenter si le modèle retenu est xgboost / lightgbm :
-# xgboost==X.Y.Z
-# lightgbm==X.Y.Z
+fastapi==0.136.3
+joblib==1.5.2
+pandas==2.3.3
+pydantic==2.13.4
+uvicorn==0.49.0
+scikit-learn==1.7.2
+lightgbm==4.6.0
+

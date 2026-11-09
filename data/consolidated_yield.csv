@@ -1,4 +1,4 @@
-﻿area,item,item_fr,year,rain_mm,pesticides_t,log_pest,pest_kg_ha,temp_c,yield_t_ha,log_yield
+area,item,item_fr,year,rain_mm,pesticides_t,log_pest,pest_kg_ha,temp_c,yield_t_ha,log_yield
 Albania,Maize,Maïs,1990,1485.0,121.0,4.804021044733257,0.17,16.37,3.6613,1.539294379189753
 Albania,Maize,Maïs,1991,1485.0,121.0,4.804021044733257,0.17,15.36,2.9068,1.3627186245911849
 Albania,Maize,Maïs,1992,1485.0,121.0,4.804021044733257,0.17,16.06,2.4876,1.2492138205715229
