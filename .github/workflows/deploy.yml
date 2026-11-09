@@ -3,6 +3,11 @@ name: Build and push API image
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/api/**'
+      - 'models/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy.yml'
 
 jobs:
   docker:
@@ -24,4 +29,8 @@ jobs:
           tags: |
             ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.DOCKERHUB_REPO }}:latest
             ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.DOCKERHUB_REPO }}:${{ github.sha }}
-            
+
+      - name: Trigger Render deploy
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
