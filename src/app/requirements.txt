@@ -1,4 +1,6 @@
-streamlit>=1.50
-requests
-pandas
-altair
+altair==5.5.0
+numpy==2.3.5
+pandas==2.3.3
+PyYAML==6.0.3
+requests==2.34.2
+streamlit==1.51.0
