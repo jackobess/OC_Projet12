@@ -1,6 +1,6 @@
 """run_pipeline.py : preprocess -> train -> evaluate, en une commande. Code retour 1 dès qu'une étape échoue.
 
-Usage : python src/data_preprocessing/run_pipeline.py [config.yaml] [--steps preprocess train evaluate]
+Usage : python src/preprocessing/run_pipeline.py [config.yaml] [--steps preprocess train evaluate]
 """
 import argparse
 import logging

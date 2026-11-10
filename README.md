@@ -1,6 +1,6 @@
 <img src="docs/Logo_Agritech.png" alt="Logo Agritech" width="200">
 
-# Agritech Answers – Prédiction & recommandation de rendement
+# Agritech Answers - Prédiction & recommandation de rendement
 
 [![CI/CD](https://github.com/jackobess/OC_Projet12/actions/workflows/ci.yml/badge.svg)](https://github.com/jackobess/OC_Projet12/actions/workflows/ci.yml)
 
