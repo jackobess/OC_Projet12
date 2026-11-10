@@ -113,7 +113,7 @@ def _predict(bundle: dict, items: list[str], ctx: Context) -> pd.DataFrame:
 # ---------- Endpoints ----------
 @app.get("/health")
 def health():
-    return {"status": "yok"}
+    return {"status": "ok"}
 
 @app.get("/getitemlist", response_model=ItemListResponse)
 def get_item_list(request: Request):
