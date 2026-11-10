@@ -23,10 +23,11 @@ flowchart LR
     A[Push sur main] --> B[GitHub Actions]
     B --> T[test]
     T --> BP[build_and_push]
+    BP -->|push image| H[(Docker Hub<br/>jackbess/agritech-api)]
     BP --> D[deploy]
-    BP --> H[(Docker Hub<br/>jackbess/agritech-api)]
-    D --> R[Render<br/>API FastAPI]
-    S[Streamlit Cloud] -->|requêtes HTTP| R
+    D -->|deploy hook| R[Render<br/>API FastAPI]
+    H -->|pull image latest| R
+    S[Streamlit Cloud<br/>App] -->|requêtes HTTP| R
     G[(GitHub)] -->|synchro auto| S
 ```
 
@@ -160,3 +161,9 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --workers 1
 ```
 
 ![MLflow](docs/mlflow_runs.png)
+
+
+![MLflow](docs/mlflow_runs_final.png)
+
+
+![MLflow](docs/mlflow_runs_tuning.png)
