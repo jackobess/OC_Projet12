@@ -52,7 +52,7 @@ jobs:
     needs: build_and_push
     runs-on: ubuntu-latest
     steps:
-    - name: Trigger Render deploy
+      - name: Trigger Render deploy
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK"
