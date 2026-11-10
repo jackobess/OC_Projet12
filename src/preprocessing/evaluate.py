@@ -5,7 +5,7 @@ Entrée  : <candidate_dir>/ (sorties de train.py) + data/consolidated_yield.csv 
 Sorties : runs MLflow (final_model + ablation), figures, models/yield_model.joblib (si contrôle qualité OK)
 Code retour 1 si le contrôle qualité échoue (modèle pas meilleur que la baseline, reco pas meilleure que le hasard).
 
-Usage : python src/data_preprocessing/evaluate.py [config.yaml]
+Usage : python src/preprocessing/evaluate.py [config.yaml]
 """
 import argparse
 import json
