@@ -1,4 +1,4 @@
-name: Build and push API image
+name: CI/CD
 
 on:
   push:
@@ -7,10 +7,28 @@ on:
       - 'src/api/**'
       - 'models/**'
       - 'Dockerfile'
-      - '.github/workflows/deploy.yml'
+      - 'tests/**'
+      - 'pytest.ini'
+      - '.github/workflows/ci.yml'
+  workflow_dispatch:
 
 jobs:
-  docker:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: tests/requirements.txt
+      - name: Install dependencies
+        run: pip install -r tests/requirements.txt
+      - name: Run tests
+        run: pytest -x -v
+
+  build_and_push:
+    needs: test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -30,7 +48,11 @@ jobs:
             ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.DOCKERHUB_REPO }}:latest
             ${{ vars.DOCKERHUB_USERNAME }}/${{ vars.DOCKERHUB_REPO }}:${{ github.sha }}
 
-      - name: Trigger Render deploy
+  deploy:
+    needs: build_and_push
+      runs-on: ubuntu-latest
+    steps:
+    - name: Trigger Render deploy
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: curl -fsS -X POST "$RENDER_DEPLOY_HOOK"

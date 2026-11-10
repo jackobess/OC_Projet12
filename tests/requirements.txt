@@ -1,0 +1,3 @@
+-r ../src/api/requirements.txt
+pytest
+httpx
