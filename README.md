@@ -167,3 +167,6 @@ mlflow ui --backend-store-uri sqlite:///mlflow.db --workers 1
 
 
 ![MLflow](docs/mlflow_runs_tuning.png)
+
+
+![MLflow](docs/mlflow_runs_compare.png)
