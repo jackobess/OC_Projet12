@@ -23,10 +23,10 @@ flowchart LR
     A[Push sur main] --> B[GitHub Actions]
     B --> T[test]
     T --> BP[build_and_push]
-    BP -->|push image| H[(Docker Hub<br/>jackbess/agritech-api)]
+    BP -->|"① push image"| H[(Docker Hub<br/>jackbess/agritech-api)]
     BP --> D[deploy]
-    D -->|deploy hook| R[Render<br/>API FastAPI]
-    H -->|pull image latest| R
+    D -->|"② deploy hook"| R[Render<br/>API FastAPI]
+    H -->|"③ pull image latest"| R
     S[Streamlit Cloud<br/>App] -->|requêtes HTTP| R
     G[(GitHub)] -->|synchro auto| S
 ```
